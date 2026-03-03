@@ -1,7 +1,7 @@
 # individual assignment — kigali city services directory
 
 **course:** mobile application development
-**student:** [your name here]
+**student:** Christian Tonny Gentil Iradukundaa
 **date:** march 2026
 
 ---
