@@ -44,6 +44,7 @@ class ListingsProvider extends ChangeNotifier {
 
   /// Start streaming all listings from Firestore
   void startListening() {
+    _allSub?.cancel();
     _status = ListingsStatus.loading;
     notifyListeners();
 
@@ -65,12 +66,30 @@ class ListingsProvider extends ChangeNotifier {
   /// Start streaming listings owned by [userId]
   void startListeningUserListings(String userId) {
     _userSub?.cancel();
+    // Clear stale data immediately so the previous user's listings
+    // are never shown while the new subscription loads.
+    _userListings = [];
+    notifyListeners();
+
     _userSub = _service.getUserListingsStream(userId).listen(
       (listings) {
         _userListings = listings;
         notifyListeners();
       },
+      onError: (e) {
+        _errorMessage = 'Failed to load your listings.';
+        notifyListeners();
+      },
     );
+  }
+
+  /// Cancel the user-specific subscription and clear its data.
+  /// Call this when the current user signs out.
+  void clearUserListings() {
+    _userSub?.cancel();
+    _userSub = null;
+    _userListings = [];
+    notifyListeners();
   }
 
   void stopListening() {

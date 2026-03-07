@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../providers/auth_provider.dart';
-import '../auth/login_screen.dart';
+import '../../providers/listings_provider.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -64,13 +64,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ),
     );
     if (confirmed == true && context.mounted) {
+      // Clear stale user listings before signing out so the next user
+      // never sees the previous account's data.
+      context.read<ListingsProvider>().clearUserListings();
       await context.read<AuthProvider>().signOut();
       if (context.mounted) {
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(builder: (_) => const LoginScreen()),
-          (_) => false,
-        );
+        // Pop back to the root route so _RootRouter stays in the widget tree
+        // and can reactively switch to LoginScreen via AuthProvider changes.
+        // pushAndRemoveUntil would unmount _RootRouter and break reactive routing.
+        Navigator.of(context).popUntil((route) => route.isFirst);
       }
     }
   }

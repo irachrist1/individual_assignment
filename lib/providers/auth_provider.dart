@@ -20,10 +20,18 @@ class AuthProvider extends ChangeNotifier {
   bool get isEmailVerified => _user?.emailVerified ?? false;
 
   AuthProvider() {
-    // Listen to Firebase auth state changes
-    _authService.authStateChanges.listen(_onAuthStateChanged);
+    _authService.authStateChanges.listen(
+      _onAuthStateChanged,
+      onError: (_) {
+        _status = AuthStatus.error;
+        _errorMessage = 'Authentication error. Please try again.';
+        notifyListeners();
+      },
+    );
   }
 
+  /// Single source of truth for auth state. Called by Firebase whenever the
+  /// signed-in user changes (sign-in, sign-out, token refresh, etc.).
   Future<void> _onAuthStateChanged(User? user) async {
     if (user == null) {
       _user = null;
@@ -32,7 +40,7 @@ class AuthProvider extends ChangeNotifier {
       notifyListeners();
       return;
     }
-    // Reload to get the latest emailVerified value
+    // Reload to get the latest emailVerified value from Firebase.
     await user.reload();
     _user = _authService.currentUser;
     if (_user != null && _user!.emailVerified) {
@@ -75,23 +83,25 @@ class AuthProvider extends ChangeNotifier {
     _errorMessage = null;
     notifyListeners();
     try {
-      _user = await _authService.signIn(email: email, password: password);
-      if (_user == null) {
+      final user = await _authService.signIn(email: email, password: password);
+      if (user == null) {
         _errorMessage = 'Login failed. Please try again.';
         _status = AuthStatus.error;
         notifyListeners();
         return false;
       }
-      // Enforce email verification
-      if (!_user!.emailVerified) {
+      // Enforce email verification before allowing access.
+      if (!user.emailVerified) {
         _errorMessage = 'Please verify your email before logging in.';
         _status = AuthStatus.error;
         notifyListeners();
+        // Sign out so Firebase doesn't leave an active unverified session.
+        await _authService.signOut();
         return false;
       }
-      _userProfile = await _authService.getUserProfile(_user!.uid);
-      _status = AuthStatus.authenticated;
-      notifyListeners();
+      // Firebase will fire authStateChanges → _onAuthStateChanged will update
+      // _user, _userProfile, and _status = authenticated. Not done here to
+      // avoid racing with _onAuthStateChanged and double-notifying listeners.
       return true;
     } on FirebaseAuthException catch (e) {
       _errorMessage = _friendlyError(e.code);
@@ -102,11 +112,14 @@ class AuthProvider extends ChangeNotifier {
   }
 
   Future<void> signOut() async {
-    await _authService.signOut();
+    // _onAuthStateChanged(null) will fire and clear _user / _userProfile /
+    // _status. Manually clearing here too ensures the UI reacts immediately
+    // even if the stream fires slightly later.
     _user = null;
     _userProfile = null;
     _status = AuthStatus.unauthenticated;
     notifyListeners();
+    await _authService.signOut();
   }
 
   /// Poll Firebase to check if user has verified their email

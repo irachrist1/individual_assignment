@@ -15,15 +15,24 @@ class FirestoreService {
             snapshot.docs.map((doc) => ListingModel.fromFirestore(doc)).toList());
   }
 
-  // Real-time stream of listings belonging to a specific user
+  // Real-time stream of listings belonging to a specific user.
+  // Sorted client-side to avoid requiring a composite Firestore index.
   Stream<List<ListingModel>> getUserListingsStream(String userId) {
     return _firestore
         .collection(_collection)
         .where('createdBy', isEqualTo: userId)
-        .orderBy('createdAt', descending: true)
         .snapshots()
-        .map((snapshot) =>
-            snapshot.docs.map((doc) => ListingModel.fromFirestore(doc)).toList());
+        .map((snapshot) {
+      final listings = snapshot.docs
+          .map((doc) => ListingModel.fromFirestore(doc))
+          .toList();
+        listings.sort((a, b) {
+          final aTime = a.createdAt ?? DateTime(0);
+          final bTime = b.createdAt ?? DateTime(0);
+          return bTime.compareTo(aTime);
+        });
+      return listings;
+    });
   }
 
   // Add a new listing to Firestore

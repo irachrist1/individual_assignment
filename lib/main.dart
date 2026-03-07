@@ -44,13 +44,14 @@ class _RootRouter extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final status = context.watch<AuthProvider>().status;
+    final auth = context.watch<AuthProvider>();
 
-    switch (status) {
+    switch (auth.status) {
       case AuthStatus.authenticated:
-        return const HomeScreen();
+        // Key by UID so Flutter always creates a fresh HomeScreen (and calls
+        // initState) when the signed-in account changes.
+        return HomeScreen(key: ValueKey('home_${auth.user?.uid}'));
       case AuthStatus.initial:
-        // Splash while Firebase initialises
         return const Scaffold(
           body: Center(child: CircularProgressIndicator()),
         );
