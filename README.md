@@ -1,64 +1,30 @@
-# kigali city services directory
+# individual_assignment
 
-flutter app for finding and managing local services and places around kigali. you can browse hospitals, restaurants, police stations, parks, and more — search, filter by category, view them on a map, and manage your own listings.
+Kigali City Services Directory — Flutter + Firebase class project for discovering local services.
 
-## what it does
+## The problem
 
-- email signup/login with verification
-- browse all listings with search bar and category filters
-- tap any listing to see details + location on map
-- get directions via google maps
-- add, edit, delete your own listings
-- see all places on a full map with markers
-- settings page with profile info and notification toggle
+Citizens in Kigali need a searchable directory of hospitals, restaurants, police stations, parks, and other services — with directions, not phone-book guesswork.
 
-## tech used
+## What it does
 
-- flutter + dart
-- firebase auth (email/password)
-- cloud firestore (realtime database)
-- google maps flutter plugin
-- provider for state management
-- geolocator for getting user location
-- shared_preferences for local settings
+Flutter app with auth, browse/filter listings, map view, CRUD for your own listings, and Google Maps directions.
 
-## project structure
+## Install
 
-```
-lib/
-├── models/          # listing and user profile models
-├── services/        # auth and firestore service classes
-├── providers/       # changenotifier providers for state
-├── screens/
-│   ├── auth/        # login, signup, email verification
-│   ├── home/        # bottom nav host
-│   ├── directory/   # listing browse + detail
-│   ├── my_listings/ # user's listings + create/edit form
-│   ├── map/         # map view with all markers
-│   └── settings/    # profile and preferences
-└── widgets/         # reusable listing card
+```bash
+git clone https://github.com/irachrist1/individual_assignment.git && cd individual_assignment
+flutterfire configure   # Firebase project required
+flutter pub get && flutter run
 ```
 
-## how to run
+Requires Firebase project and Google Maps API keys.
 
-1. set up a firebase project, enable email/password auth and cloud firestore
-2. run `flutterfire configure` to generate `firebase_options.dart`
-3. add your google maps api key to android manifest and ios appdelegate
-4. `flutter pub get`
-5. `flutter run`
+## How it works
 
-## firestore collections
+- **Provider state management.** Auth and listing state via Provider — standard Flutter pattern for class-scale apps.
+- **Firestore collections.** `users` and `listings` — realtime sync for community-submitted services.
+- **Geolocator integration.** Location-aware browse and map pins — find services near you.
+- **Google Maps directions.** Tap a listing → open directions — closes the loop from search to visit.
 
-**users** — uid, email, displayName, createdAt
-
-**listings** — name, category, address, contactNumber, description, latitude, longitude, createdBy, createdAt
-
-## state management
-
-uses provider with a service layer pattern:
-
-```
-firebase → service class → provider (changenotifier) → ui widgets
-```
-
-auth state is handled reactively — the root widget watches auth status and swaps between login and home screen automatically. listings stream from firestore in realtime through the provider so the ui always stays in sync.
+ALU class project · [Christian Tonny](https://github.com/irachrist1)
